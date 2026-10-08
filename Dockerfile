@@ -12,6 +12,7 @@ RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 # Copy workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/*/package.json ./packages/*/
+COPY examples/*/package.json ./examples/*/
 COPY tsconfig.base.json ./
 
 # Install dependencies
