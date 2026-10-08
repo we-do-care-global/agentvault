@@ -1,0 +1,55 @@
+name: Publish to Zenodo
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  zenodo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install zenodo-client
+
+      - name: Get version from tag
+        id: version
+        run: |
+          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Prepare metadata
+        run: |
+          zenodo deposit create \
+            --title "AgentVault – Enterprise Control Plane for AI Tools" \
+            --upload-type software \
+            --description "$(cat README.md | head -20)" \
+            --creators "$(jq -c '.creators' .zenodo.json)" \
+            --access-right open \
+            --license Apache-2.0 \
+            --keywords "$(jq -r '.keywords[]' .zenodo.json | paste -sd ',' -)" \
+            --version "${{ steps.version.outputs.version }}" \
+            --publication-date "$(jq -r '.publication_date' .zenodo.json)" \
+            --related-identifiers "$(jq -c '.related_identifiers' .zenodo.json)" \
+            --output zenodo_deposit.json
+
+      - name: Upload all files
+        run: |
+          DEPOSIT_ID=$(jq -r '.id' zenodo_deposit.json)
+          zenodo deposit upload $DEPOSIT_ID --files LICENSE README.md CITATION.cff .zenodo.json package.json pnpm-workspace.yaml tsconfig.base.json packages/ examples/ docs/ .github/workflows/zenodo.yml
+
+      - name: Publish deposit
+        run: |
+          DEPOSIT_ID=$(jq -r '.id' zenodo_deposit.json)
+          zenodo deposit publish $DEPOSIT_ID

@@ -1,0 +1,15 @@
+{
+  "name": "@we-do-care/agentvault-adapters",
+  "version": "0.1.3",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@we-do-care/agentvault-shared": "workspace:*"
+  }
+}

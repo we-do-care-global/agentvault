@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.turbo/
+*.tsbuildinfo
+*.log
+data/
+.env
+.DS_Store
+coverage/
+.vitest/
+*.tsbuildinfo
+
+# Stray tooling artefacts
+os.devnull
+
+
+# Stray artifacts
+os.devnull
+

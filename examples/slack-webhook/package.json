@@ -1,0 +1,14 @@
+{
+  "name": "@we-do-care/agentvault-example-slack-webhook",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "author": "Emir Perla <emirperla96@gmail.com> (https://orcid.org/0009-0009-8515-2727)",
+  "description": "Example manifest for AgentVault by We Do Care Global",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@we-do-care/agentvault-core": "workspace:*"
+  }
+}

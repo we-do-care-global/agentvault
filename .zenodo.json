@@ -1,0 +1,34 @@
+{
+  "title": "AgentVault \u2013 Enterprise Control Plane for AI Tools",
+  "upload_type": "software",
+  "description": "Governance, secrets lifecycle, multi-provider function calling, and per-tool telemetry for AI tools. Enact-compatible, self-hosted, fail-closed.",
+  "creators": [
+    {
+      "name": "Perla, Emir",
+      "affiliation": "We Do Care Global",
+      "orcid": "0009-0009-8515-2727"
+    }
+  ],
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "keywords": [
+    "AI agents",
+    "tool registry",
+    "secrets management",
+    "governance",
+    "telemetry",
+    "function calling",
+    "Enact",
+    "MCP",
+    "TypeScript"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/we-do-care-global/agentvault",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ],
+  "version": "0.1.3",
+  "publication_date": "2026-09-26"
+}

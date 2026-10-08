@@ -1,0 +1,50 @@
+{
+  "name": "@we-do-care/agentvault",
+  "version": "0.1.3",
+  "description": "Enterprise Control Plane for AI Tools - by We Do Care Global",
+  "license": "Apache-2.0",
+  "author": "Emir Perla <emirperla96@gmail.com> (https://orcid.org/0009-0009-8515-2727)",
+  "homepage": "https://we-do-care-global.github.io/agentvault/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/we-do-care-global/agentvault.git"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "tool-registry",
+    "secrets-management",
+    "governance",
+    "telemetry",
+    "enact",
+    "mcp"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "agentvault": "./dist/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b && node -e \"require('node:fs').chmodSync('dist/index.js', 0o755)\"",
+    "test": "pnpm build && vitest run",
+    "typecheck": "tsc -b && tsc -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@we-do-care/agentvault-core": "workspace:*",
+    "@we-do-care/agentvault-vault": "workspace:*",
+    "@we-do-care/agentvault-governance": "workspace:*",
+    "@we-do-care/agentvault-telemetry": "workspace:*",
+    "@we-do-care/agentvault-importer": "workspace:*",
+    "@we-do-care/agentvault-server": "workspace:*",
+    "@we-do-care/agentvault-shared": "workspace:*",
+    "commander": "^12.1.0",
+    "yaml": "^2.6.0"
+  }
+}

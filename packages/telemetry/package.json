@@ -1,0 +1,27 @@
+{
+  "name": "@we-do-care/agentvault-telemetry",
+  "version": "0.1.3",
+  "license": "Apache-2.0",
+  "author": "Emir Perla <emirperla96@gmail.com> (https://orcid.org/0009-0009-8515-2727)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "typecheck": "tsc -b && tsc -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@we-do-care/agentvault-shared": "workspace:*",
+    "@we-do-care/agentvault-core": "workspace:*"
+  }
+}

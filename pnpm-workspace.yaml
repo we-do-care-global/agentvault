@@ -1,0 +1,10 @@
+packages:
+  - "packages/*"
+  - "examples/*"
+
+# pnpm >=11 requires an explicit decision per native package.
+# All three ship prebuilds; argon2/better-sqlite3 back the vault and registry.
+allowBuilds:
+  argon2: true
+  better-sqlite3: true
+  esbuild: true

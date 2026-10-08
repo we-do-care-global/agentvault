@@ -1,0 +1,48 @@
+enact: "2.0.0"
+vault: "1.0.0"
+
+name: "we-do-care/slack-webhook"
+version: "1.0.0"
+description: "Post messages to Slack via incoming webhook"
+
+from: "node:20-slim"
+command: "node /workspace/main.js ${action}"
+
+inputSchema:
+  type: object
+  properties:
+    action: { type: string, enum: [post] }
+    text:   { type: string }
+  required: [action, text]
+
+outputSchema:
+  type: object
+  properties:
+    ok: { type: boolean }
+
+governance:
+  required_role: ["agent", "super_admin"]
+  max_calls_per_minute: 10
+  allowed_contexts: [production, staging]
+
+secrets:
+  - name: SLACK_WEBHOOK_URL
+    source: "vault://default/slack/webhook"
+    rotation: "90d"
+    scope: "post:slack"
+
+telemetry:
+  track_latency: true
+  track_cost: true
+  alert_threshold: { latency_ms: 800, error_rate: 0.02 }
+
+providers:
+  gemini:    { function_name: "slack_post" }
+  openai:    { function_name: "slack_post" }
+  anthropic: { function_name: "slack_post" }
+  ollama:    { function_name: "slack_post" }
+
+circuit_breaker:
+  error_threshold: 5
+  window_seconds: 60
+  open_duration_seconds: 30

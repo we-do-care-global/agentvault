@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+title: "AgentVault – Enterprise Control Plane for AI Tools"
+message: >-
+  If you use this software, please cite it as below.
+authors:
+  - family-names: "Perla"
+    given-names: "Emir"
+    orcid: "https://orcid.org/0009-0009-8515-2727"
+    affiliation: "We Do Care Global"
+    email: "emirperla96@gmail.com"
+version: "0.1.0"
+date-released: 2026-09-26
+url: "https://github.com/we-do-care-global/agentvault"
+license: "Apache-2.0"
+keywords:
+  - "AI agents"
+  - "tool registry"
+  - "secrets management"
+  - "governance"
+  - "telemetry"
+  - "function calling"
+  - "Enact"
+  - "MCP"
+  - "TypeScript"
+repository-code: "https://github.com/we-do-care-global/agentvault"
