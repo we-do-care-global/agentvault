@@ -2,7 +2,7 @@
 # Multi-stage build for smaller production image
 
 # Stage 1: Build
-FROM node:22-alpine@sha256:42651b9b13395c71e56c4c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5 AS builder
+FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,16 @@ RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 
 # Copy workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/*/package.json ./packages/*/
+COPY packages/adapters/package.json ./packages/adapters/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/core/package.json ./packages/core/
+COPY packages/governance/package.json ./packages/governance/
+COPY packages/importer/package.json ./packages/importer/
+COPY packages/server/package.json ./packages/server/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/telemetry/package.json ./packages/telemetry/
+COPY packages/vault/package.json ./packages/vault/
+COPY examples/slack-webhook/package.json ./examples/slack-webhook/
 COPY tsconfig.base.json ./
 
 # Install dependencies
@@ -24,7 +33,7 @@ COPY packages/ ./packages/
 RUN pnpm build
 
 # Stage 2: Production
-FROM node:22-alpine@sha256:42651b9b13395c71e56c4c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5 AS production
+FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS production
 
 WORKDIR /app
 
@@ -32,12 +41,20 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 
 # Create non-root user
-RUN addgroup -g 1000 -S appgroup && \
-    adduser -u 1000 -S appuser -G appgroup
+RUN addgroup -g 1001 appgroup && \
+    adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/*/package.json ./packages/*/
+COPY packages/adapters/package.json ./packages/adapters/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/core/package.json ./packages/core/
+COPY packages/governance/package.json ./packages/governance/
+COPY packages/importer/package.json ./packages/importer/
+COPY packages/server/package.json ./packages/server/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/telemetry/package.json ./packages/telemetry/
+COPY packages/vault/package.json ./packages/vault/
 
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod --prefer-offline
