@@ -13,9 +13,11 @@ name: Zenodo publishing
 # tried first, but it only ships `download` and `update` subcommands — there is
 # no `deposit create/upload/publish`, so that path could never have worked.
 # (Likewise `zenodo_get` is download-only.)
+# NOTE: `release: types: [published]` intentionally disabled — it fired on every
+# release created during the org->account migration and failed on a missing
+# ZENODO_TOKEN. Re-enable only when the token is configured.
+# See: docs/ZENODO_TRIGGER.md
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
