@@ -11,8 +11,16 @@ RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 
 # Copy workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/*/package.json ./packages/*/
-COPY examples/*/package.json ./examples/*/
+COPY packages/adapters/package.json ./packages/adapters/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/core/package.json ./packages/core/
+COPY packages/governance/package.json ./packages/governance/
+COPY packages/importer/package.json ./packages/importer/
+COPY packages/server/package.json ./packages/server/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/telemetry/package.json ./packages/telemetry/
+COPY packages/vault/package.json ./packages/vault/
+COPY examples/slack-webhook/package.json ./examples/slack-webhook/
 COPY tsconfig.base.json ./
 
 # Install dependencies
@@ -38,7 +46,15 @@ RUN addgroup -g 1001 appgroup && \
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/*/package.json ./packages/*/
+COPY packages/adapters/package.json ./packages/adapters/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/core/package.json ./packages/core/
+COPY packages/governance/package.json ./packages/governance/
+COPY packages/importer/package.json ./packages/importer/
+COPY packages/server/package.json ./packages/server/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/telemetry/package.json ./packages/telemetry/
+COPY packages/vault/package.json ./packages/vault/
 
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod --prefer-offline
