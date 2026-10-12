@@ -23,6 +23,6 @@
   "dependencies": {
     "@we-do-care/agentvault-core": "workspace:*",
     "@we-do-care/agentvault-shared": "workspace:*",
-    "argon2": "^0.44.0"
+    "argon2": "^0.45.1"
   }
 }
