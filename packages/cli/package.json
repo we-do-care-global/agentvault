@@ -44,7 +44,7 @@
     "@we-do-care/agentvault-importer": "workspace:*",
     "@we-do-care/agentvault-server": "workspace:*",
     "@we-do-care/agentvault-shared": "workspace:*",
-    "commander": "^12.1.0",
+    "commander": "^15.0.0",
     "yaml": "^2.6.0"
   }
 }
