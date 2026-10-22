@@ -40,6 +40,11 @@ WORKDIR /app
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 
+# better-sqlite3 may need to compile from source on Alpine/musl.
+# Keep only the runtime C++ library after dependency installation.
+RUN apk add --no-cache libstdc++ \
+    && apk add --no-cache --virtual .build-deps python3 make g++
+
 # Create non-root user
 RUN addgroup -g 1001 appgroup && \
     adduser -u 1001 -G appgroup -s /bin/sh -D appuser
@@ -56,8 +61,9 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/telemetry/package.json ./packages/telemetry/
 COPY packages/vault/package.json ./packages/vault/
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod --prefer-offline
+# Install production dependencies only, then remove the native build toolchain.
+RUN pnpm install --frozen-lockfile --prod --prefer-offline \
+    && apk del .build-deps
 
 # Copy built artifacts from builder
 COPY --from=builder /app/packages ./packages
