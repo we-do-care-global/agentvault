@@ -9,6 +9,9 @@ WORKDIR /app
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 
+# better-sqlite3 may compile from source on Alpine/musl during the build stage.
+RUN apk add --no-cache python3 make g++
+
 # Copy workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/adapters/package.json ./packages/adapters/
