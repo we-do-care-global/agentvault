@@ -2,27 +2,61 @@
 // Copyright (c) 2026 We Do Care Global
 // Author: Emir Perla <emirperla96@gmail.com>  ORCID 0009-0009-8515-2727
 
-import Database from "better-sqlite3";
+import initSqlJs from "sql.js";
 import { randomUUID } from "node:crypto";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-export type DB = Database.Database;
+export type DB = any;
+
+// sql.js is WASM-based and must be initialized asynchronously.
+// The WASM binary is bundled with the sql.js npm package.
+let sqlPromise: Promise<unknown> | null = null;
+
+async function getSql(): Promise<unknown> {
+  if (!sqlPromise) {
+    sqlPromise = initSqlJs({
+      locateFile: (file: string) => {
+        return new URL("../../../node_modules/.pnpm/sql.js@1.16.0/node_modules/sql.js/dist/sql-wasm.wasm", import.meta.url).href;
+      },
+    });
+  }
+  return sqlPromise;
+}
 
 /** SQLite is the v0.1.0 store; Postgres + Drizzle lands in v0.2.0. */
-export function openDb(path = "./data/vault.db"): DB {
+export async function openDb(path = "./data/vault.db"): Promise<DB> {
   if (path !== ":memory:") {
     mkdirSync(dirname(resolve(path)), { recursive: true });
   }
-  const db = new Database(path);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
+
+  const SQL = await getSql();
+  const Database = (SQL as any).Database;
+
+  let db: DB;
+  if (path !== ":memory:" && existsSync(path)) {
+    // Load existing database from file
+    const filebuffer = readFileSync(path);
+    db = new Database(filebuffer) as DB;
+  } else {
+    db = new Database() as DB;
+  }
+
+  db.exec("PRAGMA journal_mode = WAL");
+  db.exec("PRAGMA foreign_keys = ON");
   migrate(db);
   return db;
 }
 
+/** Persist an in-memory sql.js database to disk. */
+export function saveDb(db: DB, path = "./data/vault.db"): void {
+  if (path === ":memory:") return;
+  const data = db.export();
+  writeFileSync(path, Buffer.from(data));
+}
+
 function migrate(db: DB) {
-  db.exec(`
+  (db as any).exec(`
     CREATE TABLE IF NOT EXISTS tools (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL DEFAULT 'default',
@@ -100,4 +134,6 @@ function migrate(db: DB) {
   `);
 }
 
-export function newId(): string { return randomUUID(); }
+export function newId(): string {
+  return randomUUID();
+}

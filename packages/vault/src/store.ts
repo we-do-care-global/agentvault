@@ -182,7 +182,7 @@ export class SecretVault {
   }
 }
 
-export function createVault(masterPassphrase: string, dbPath?: string): SecretVault {
-  const db = openDb(dbPath);
+export async function createVault(masterPassphrase: string, dbPath?: string): Promise<SecretVault> {
+  const db = await openDb(dbPath);
   return new SecretVault(db, "default", masterPassphrase);
 }

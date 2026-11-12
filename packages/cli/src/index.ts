@@ -6,7 +6,7 @@ import { Command } from "commander";
 import { readFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import YAML from "yaml";
-import { openDb, ToolRegistry, loadManifest, parseManifest } from "@we-do-care/agentvault-core";
+import { openDb, saveDb, ToolRegistry, loadManifest, parseManifest } from "@we-do-care/agentvault-core";
 import { SecretVault, AuditLedger } from "@we-do-care/agentvault-vault";
 import { PolicyStore } from "@we-do-care/agentvault-governance";
 import { Telemetry } from "@we-do-care/agentvault-telemetry";
@@ -57,9 +57,11 @@ program
 // ---- init ----
 program.command("init")
   .description("Initialize the AgentVault data directory and database")
-  .action(() => {
+  .action(async () => {
     ensureDataDir();
-    openDb(DB_PATH).close();
+    const db = await openDb(DB_PATH);
+    saveDb(db, DB_PATH);
+    db.close();
     console.log(`Initialized ${BRAND.product} at ${DB_PATH}`);
     console.log(`${BRAND.org} - ORCID ${BRAND.orcid}`);
   });
@@ -67,9 +69,9 @@ program.command("init")
 // ---- doctor ----
 program.command("doctor")
   .description("Check environment, database, registry and audit chain")
-  .action(() => {
+  .action(async () => {
     ensureDataDir();
-    const db = openDb(DB_PATH);
+    const db = await openDb(DB_PATH);
     const registry = new ToolRegistry(db);
     const audit = new AuditLedger(db);
     const telemetry = new Telemetry(db);
@@ -85,6 +87,7 @@ program.command("doctor")
       console.log("  ! Set AGENTVAULT_MASTER_KEY before storing real secrets.");
     }
     if (!chain.ok) process.exitCode = 1;
+    saveDb(db, DB_PATH);
     db.close();
   });
 
@@ -94,22 +97,24 @@ const tools = program.command("tools");
 tools.command("register <file>")
   .description("Register a tool manifest (.yaml or enact.md with frontmatter)")
   .option("--trust <level>", "trust level: Untrusted|Low|Medium|High|System", "Medium")
-  .action((file, opts) => {
+  .action(async (file, opts) => {
     ensureDataDir();
     const manifest = loadManifest(resolve(file));
-    const db = openDb(DB_PATH);
+    const db = await openDb(DB_PATH);
     const t = new ToolRegistry(db).register(manifest, opts.trust as TrustLevel);
     new AuditLedger(db).append("cli", "tool.register", `tool:${t.name}@${t.version}`, { trust: opts.trust });
     console.log(`Registered ${t.name}@${t.version} (trust: ${t.trust_level})`);
+    saveDb(db, DB_PATH);
     db.close();
   });
 
 tools.command("list")
   .description("List registered tools")
-  .action(() => {
+  .action(async () => {
     ensureDataDir();
-    const db = openDb(DB_PATH);
+    const db = await openDb(DB_PATH);
     const list = new ToolRegistry(db).list();
+    saveDb(db, DB_PATH);
     db.close();
     if (!list.length) { console.log("No tools registered."); return; }
     console.log(`Tools in ${BRAND.product}:`);
@@ -119,9 +124,10 @@ tools.command("list")
 tools.command("show <name>")
   .description("Show one registered tool manifest (org/tool)")
   .option("--tool-version <version>", "version (defaults to the most recent)")
-  .action((name, opts) => {
-    const db = openDb(DB_PATH);
+  .action(async (name, opts) => {
+    const db = await openDb(DB_PATH);
     const t = new ToolRegistry(db).get(name, opts.toolVersion);
+    saveDb(db, DB_PATH);
     db.close();
     if (!t) { console.error(`Not found: ${name}`); process.exitCode = 1; return; }
     console.log(JSON.stringify(t, null, 2));
@@ -130,10 +136,11 @@ tools.command("show <name>")
 tools.command("remove <name>")
   .description("Remove a tool version (org/tool)")
   .requiredOption("--tool-version <version>", "version to remove")
-  .action((name, opts) => {
-    const db = openDb(DB_PATH);
+  .action(async (name, opts) => {
+    const db = await openDb(DB_PATH);
     const ok = new ToolRegistry(db).remove(name, opts.toolVersion);
     if (ok) new AuditLedger(db).append("cli", "tool.remove", `tool:${name}@${opts.toolVersion}`);
+    saveDb(db, DB_PATH);
     db.close();
     if (!ok) { console.error(`Not found: ${name}@${opts.toolVersion}`); process.exitCode = 1; return; }
     console.log(`Removed ${name}@${opts.toolVersion}`);
@@ -142,16 +149,17 @@ tools.command("remove <name>")
 tools.command("import <spec>")
   .description("Import an OpenAPI 3.x spec as tool manifests")
   .requiredOption("--name <org>", "publisher/org name")
-  .action((spec, opts) => {
+  .action(async (spec, opts) => {
     ensureDataDir();
     const manifests = importOpenAPI(YAML.parse(readFileSync(resolve(spec), "utf8")), { name: opts.name });
-    const db = openDb(DB_PATH);
+    const db = await openDb(DB_PATH);
     const registry = new ToolRegistry(db);
     const audit = new AuditLedger(db);
     for (const m of manifests) {
       registry.register(m, "Medium", opts.name);
       audit.append("cli", "tool.import", `tool:${m.name}@${m.version}`, { source: spec });
     }
+    saveDb(db, DB_PATH);
     db.close();
     console.log(`Imported ${manifests.length} tools from ${spec}`);
   });
@@ -199,24 +207,28 @@ vault.command("set <key>")
   .option("--ttl <seconds>", "time to live in seconds")
   .action(async (key, opts) => {
     ensureDataDir();
-    const db = openDb(DB_PATH);
+    const db = await openDb(DB_PATH);
     const v = new SecretVault(db, "default", MASTER);
     const meta = await v.put(opts.namespace, key, readValue(opts.value), {
       scope: opts.scope,
       ttlSeconds: opts.ttl ? Number(opts.ttl) : undefined,
     });
     new AuditLedger(db).append("cli", "secret.create", `vault://${meta.namespace}/${meta.key}`, { key_version: meta.key_version });
-    v.lock(); db.close();
+    v.lock();
+    saveDb(db, DB_PATH);
+    db.close();
     console.log(`Secret stored: vault://${meta.namespace}/${meta.key} (v${meta.key_version})`);
   });
 
 vault.command("list")
   .description("List secret metadata (never plaintext)")
-  .action(() => {
-    const db = openDb(DB_PATH);
+  .action(async () => {
+    const db = await openDb(DB_PATH);
     const v = new SecretVault(db, "default", MASTER);
     const items = v.list();
-    v.lock(); db.close();
+    v.lock();
+    saveDb(db, DB_PATH);
+    db.close();
     if (!items.length) { console.log("No secrets stored."); return; }
     for (const s of items) {
       console.log(`   vault://${s.namespace}/${s.key} (v${s.key_version})${s.expires_at ? ` expires ${s.expires_at}` : ""}`);
@@ -227,12 +239,14 @@ vault.command("get <key>")
   .description("Read a secret value back (use sparingly; it decrypts in-process)")
   .option("--namespace <ns>", "namespace", "default")
   .action(async (key, opts) => {
-    const db = openDb(DB_PATH);
+    const db = await openDb(DB_PATH);
     const v = new SecretVault(db, "default", MASTER);
     try {
       console.log(await v.get(opts.namespace, key));
     } finally {
-      v.lock(); db.close();
+      v.lock();
+      saveDb(db, DB_PATH);
+      db.close();
     }
   });
 
@@ -241,21 +255,24 @@ vault.command("rotate <key>")
   .option("--namespace <ns>", "namespace", "default")
   .option("--value <value>", "new value; omit to re-wrap the current value")
   .action(async (key, opts) => {
-    const db = openDb(DB_PATH);
+    const db = await openDb(DB_PATH);
     const v = new SecretVault(db, "default", MASTER);
     const meta = await v.rotate(opts.namespace, key, opts.value);
     new AuditLedger(db).append("cli", "secret.rotate", `vault://${meta.namespace}/${meta.key}`, { key_version: meta.key_version });
-    v.lock(); db.close();
+    v.lock();
+    saveDb(db, DB_PATH);
+    db.close();
     console.log(`Rotated vault://${meta.namespace}/${meta.key} -> v${meta.key_version}`);
   });
 
 vault.command("revoke <key>")
   .description("Destroy every version of a secret")
   .option("--namespace <ns>", "namespace", "default")
-  .action((key, opts) => {
-    const db = openDb(DB_PATH);
+  .action(async (key, opts) => {
+    const db = await openDb(DB_PATH);
     const ok = new SecretVault(db, "default", MASTER).revoke(opts.namespace, key);
     new AuditLedger(db).append("cli", "secret.revoke", `vault://${opts.namespace}/${key}`, { removed: ok });
+    saveDb(db, DB_PATH);
     db.close();
     if (!ok) { console.error(`Not found: vault://${opts.namespace}/${key}`); process.exitCode = 1; return; }
     console.log(`Revoked vault://${opts.namespace}/${key}`);
@@ -270,9 +287,9 @@ policy.command("attach <tool>")
   .option("--max-calls <n>", "max calls per minute", "60")
   .option("--context <ctx>", "context", "production")
   .option("--priority <n>", "policy priority (higher wins)", "100")
-  .action((tool, opts) => {
+  .action(async (tool, opts) => {
     ensureDataDir();
-    const db = openDb(DB_PATH);
+    const db = await openDb(DB_PATH);
     const id = `${tool.replace(/\W+/g, "-")}-${opts.role}`;
     const rule = new PolicyStore(db).put({
       id,
@@ -283,15 +300,17 @@ policy.command("attach <tool>")
       priority: Number(opts.priority),
     });
     new AuditLedger(db).append("cli", "policy.upsert", `policy:${rule.id}`);
+    saveDb(db, DB_PATH);
     db.close();
     console.log(`Attached policy ${rule.id} (max ${opts.maxCalls}/min for role ${opts.role})`);
   });
 
 policy.command("list")
   .description("List policies, highest priority first")
-  .action(() => {
-    const db = openDb(DB_PATH);
+  .action(async () => {
+    const db = await openDb(DB_PATH);
     const list = new PolicyStore(db).list();
+    saveDb(db, DB_PATH);
     db.close();
     if (!list.length) { console.log("No policies. Calls are denied until one is attached (fail-closed)."); return; }
     for (const p of list) {
@@ -301,10 +320,11 @@ policy.command("list")
 
 policy.command("remove <id>")
   .description("Remove a policy by id")
-  .action((id) => {
-    const db = openDb(DB_PATH);
+  .action(async (id) => {
+    const db = await openDb(DB_PATH);
     const ok = new PolicyStore(db).remove(id);
     if (ok) new AuditLedger(db).append("cli", "policy.remove", `policy:${id}`);
+    saveDb(db, DB_PATH);
     db.close();
     if (!ok) { console.error(`Not found: ${id}`); process.exitCode = 1; return; }
     console.log(`Removed policy ${id}`);

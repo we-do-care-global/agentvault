@@ -4,7 +4,7 @@
 
 import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
-import { openDb, ToolRegistry, newId } from "@we-do-care/agentvault-core";
+import { openDb, saveDb, ToolRegistry, newId } from "@we-do-care/agentvault-core";
 import { SecretVault, AuditLedger } from "@we-do-care/agentvault-vault";
 import { PolicyStore, evaluate, SlidingWindowCounter, can } from "@we-do-care/agentvault-governance";
 import { Telemetry } from "@we-do-care/agentvault-telemetry";
@@ -58,7 +58,7 @@ const toolCallDuration = new Histogram({
 });
 
 export async function buildApp(cfg: ServerConfig): Promise<FastifyInstance> {
-  const db = openDb(cfg.dbPath);
+  const db = await openDb(cfg.dbPath);
   const tenant = cfg.tenant ?? "default";
   const registry = new ToolRegistry(db, tenant);
   const vault = new SecretVault(db, tenant, cfg.masterPassphrase);
@@ -304,6 +304,7 @@ export async function buildApp(cfg: ServerConfig): Promise<FastifyInstance> {
 
   app.addHook("onClose", async () => {
     vault.lock();
+    saveDb(db, cfg.dbPath);
     db.close();
   });
 
