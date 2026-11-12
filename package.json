@@ -21,9 +21,10 @@
     "clean": "pnpm -r exec node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "devDependencies": {
-    "typescript": "^7.0.2",
-    "vitest": "^5.1.0",
     "@types/node": "^26.6.5",
-    "tsx": "^4.19.1"
+    "@types/sql.js": "^1.4.11",
+    "tsx": "^4.19.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
   }
 }

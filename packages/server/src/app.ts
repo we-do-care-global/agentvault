@@ -58,7 +58,7 @@ const toolCallDuration = new Histogram({
 });
 
 export async function buildApp(cfg: ServerConfig): Promise<FastifyInstance> {
-  const db = openDb(cfg.dbPath);
+  const db = await openDb(cfg.dbPath);
   const tenant = cfg.tenant ?? "default";
   const registry = new ToolRegistry(db, tenant);
   const vault = new SecretVault(db, tenant, cfg.masterPassphrase);
